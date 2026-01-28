@@ -1,0 +1,12 @@
+# Capstone — Facility Maintenance Analytics (FMUCD)
+# Use in local env or attach to Databricks cluster.
+# Databricks runtimes include PySpark, Delta; MLflow is built-in.
+
+pyspark>=3.3.0
+delta-spark>=2.3.0
+pandas>=1.5.0
+pyyaml>=6.0
+
+# Optional for ML
+# scikit-learn>=1.2.0
+# mlflow>=2.0.0

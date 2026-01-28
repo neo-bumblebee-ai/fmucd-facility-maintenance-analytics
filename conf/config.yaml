@@ -1,0 +1,27 @@
+# Capstone — Facility Maintenance Analytics (FMUCD)
+# Adjust paths and names for your Databricks workspace / Unity Catalog.
+
+catalog: fmucd_capstone
+schemas:
+  bronze: bronze
+  silver: silver
+  gold: gold
+
+tables:
+  bronze_raw: bronze_fmucd_raw
+  # Silver: Fact and Dimension tables
+  fact_work_orders: fact_work_orders
+  dim_building: dim_building
+  dim_system: dim_system
+  dim_subsystem: dim_subsystem
+  dim_component: dim_component
+  # Gold tables
+  gold_wo_by_building: gold_wo_by_building
+  gold_wo_by_system: gold_wo_by_system
+  gold_ppm_upm_summary: gold_ppm_upm_summary
+  gold_kpis: gold_kpis
+
+paths:
+  # FMUCD source (local or cloud); update for your environment.
+  fmucd_csv: /Workspace/Repos/<your-repo>/fmucd-facility-maintenance-analytics/docs/Facility Management Unified Classification Database (FMUCD).csv
+  # Or e.g. s3://bucket/fmucd/Facility Management Unified Classification Database (FMUCD).csv
