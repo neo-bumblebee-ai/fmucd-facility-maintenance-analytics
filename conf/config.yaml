@@ -22,6 +22,13 @@ tables:
   gold_kpis: gold_kpis
 
 paths:
-  # FMUCD source (local or cloud); update for your environment.
-  fmucd_csv: /Workspace/Repos/<your-repo>/fmucd-facility-maintenance-analytics/docs/Facility Management Unified Classification Database (FMUCD).csv
-  # Or e.g. s3://bucket/fmucd/Facility Management Unified Classification Database (FMUCD).csv
+  # FMUCD source: Downloaded from Kaggle to Databricks Volume
+  volume_schema: fmucd_data
+  volume_name: fmucd_data
+  fmucd_csv: /Volumes/fmucd_capstone/fmucd_data/fmucd_data/Facility Management Unified Classification Database (FMUCD).csv
+  
+kaggle:
+  # Update with your Kaggle dataset path (e.g., "username/dataset-name")
+  dataset: ""  # e.g., "your-username/facility-management-unified-classification-database-fmucd"
+  username: ""  # Your Kaggle username
+  api_key: ""    # Your Kaggle API key (set via environment variable in notebook)

@@ -8,7 +8,7 @@ End-to-end **Databricks** capstone using the **Facility Management Unified Class
 
 **Solution**: Ingest FMUCD work-order and asset data → Bronze/Silver/Gold medallion → analytics + optional ML (e.g. high-cost / long-duration prediction) → SQL dashboard for facility managers and capital planners.
 
-**Dataset**: `docs/Facility Management Unified Classification Database (FMUCD).csv` — university campus (Canada, Nova Scotia): work orders, buildings, systems (HVAC, Electrical, Plumbing, Fire, etc.), costs, labor, weather.
+**Dataset**: **Facility Management Unified Classification Database (FMUCD)** — downloaded from Kaggle to Databricks Volume. University campus (Canada, Nova Scotia): work orders, buildings, systems (HVAC, Electrical, Plumbing, Fire, etc.), costs, labor, weather.
 
 ## Capstone checklist and plan
 
@@ -35,7 +35,7 @@ FMUCD CSV → Bronze (Delta) → Silver (Delta) → Gold (Delta)
 
 1. Open **[CAPSTONE_CHECKLIST.md](CAPSTONE_CHECKLIST.md)** and use it to track progress.
 2. Read **[docs/CAPSTONE_PLAN.md](docs/CAPSTONE_PLAN.md)** for the problem statement, FMUCD schema, and architecture.
-3. Add this repo to **Databricks Repos** and set `FMUCD_CSV_PATH` in `01_bronze_ingest` (or `conf/config.yaml`) to your FMUCD CSV path.
+3. Add this repo to **Databricks Repos** and configure Kaggle credentials in `01_bronze_ingest` (update `KAGGLE_USERNAME`, `KAGGLE_KEY`, and `KAGGLE_DATASET`).
 4. Create the Unity Catalog catalog/schemas (or run `01_bronze_ingest`; it runs `CREATE … IF NOT EXISTS`).
 5. Run notebooks **01 → 02 → 02b → 03** in order, then **06** for dashboard SQL. Optionally add **04** and **05** for ML.
 6. Create a **Databricks Job** per [docs/WORKFLOW_JOB.md](docs/WORKFLOW_JOB.md) to orchestrate the pipeline.
@@ -45,7 +45,11 @@ FMUCD CSV → Bronze (Delta) → Silver (Delta) → Gold (Delta)
 ### 1. Repo and data
 
 - Clone or add this repo to **Databricks Repos**.
-- Ensure `docs/Facility Management Unified Classification Database (FMUCD).csv` is available at the path used in the notebooks (or update `FMUCD_CSV_PATH` / `conf/config.yaml`).
+- **Kaggle setup**: 
+  - Get your Kaggle API credentials from [Kaggle Settings](https://www.kaggle.com/settings)
+  - Upload the FMUCD dataset to your Kaggle account (or use an existing public dataset)
+  - Update `KAGGLE_USERNAME`, `KAGGLE_KEY`, and `KAGGLE_DATASET` in `notebooks/01_bronze_ingest.py`
+  - The notebook will download the dataset to a Databricks Volume automatically
 
 ### 2. Unity Catalog
 
@@ -63,7 +67,7 @@ FMUCD CSV → Bronze (Delta) → Silver (Delta) → Gold (Delta)
 
 **Notebooks** (in order):
 
-1. `notebooks/01_bronze_ingest` — Ingest CSV → Bronze.
+1. `notebooks/01_bronze_ingest` — Download from Kaggle → Volume → Ingest to Bronze.
 2. `notebooks/02_silver_cleanse` — Cleanse → Silver.
 3. `notebooks/02b_data_quality` — Data quality checks.
 4. `notebooks/03_gold_aggregates` — Gold tables, OPTIMIZE/ZORDER.
@@ -75,7 +79,7 @@ FMUCD CSV → Bronze (Delta) → Silver (Delta) → Gold (Delta)
 
 ### 5. Config
 
-- Update `conf/config.yaml` and notebook variables (`CATALOG`, `FMUCD_CSV_PATH`, etc.) for your workspace and paths.
+- Update `conf/config.yaml` and notebook variables (`CATALOG`, `KAGGLE_DATASET`, Volume paths, etc.) for your workspace.
 
 ## Project layout
 
@@ -89,8 +93,8 @@ FMUCD CSV → Bronze (Delta) → Silver (Delta) → Gold (Delta)
 ├── docs/
 │   ├── CAPSTONE_PLAN.md     # Plan, architecture, FMUCD
 │   ├── WORKFLOW_JOB.md      # Job setup
-│   ├── FMUCD.csv            # Dataset
 │   └── Databricks_14_Days_AI_Challenge.pdf
+│   # Note: FMUCD.csv is downloaded from Kaggle to Databricks Volume (not in repo)
 ├── notebooks/
 │   ├── 01_bronze_ingest
 │   ├── 02_silver_cleanse
