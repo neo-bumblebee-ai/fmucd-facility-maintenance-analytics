@@ -96,73 +96,73 @@ spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{BRONZE_SCHEMA}")
 # COMMAND ----------
 
 # Read CSV with enhanced options for proper parsing
-# Option 1: Use explicit schema (uncomment if inferSchema causes issues)
-# df = (
-#     spark.read
-#     .option("header", "true")
-#     .schema(explicit_schema)  # Use explicit schema defined above
-#     .option("delimiter", ",")
-#     .option("quote", '"')
-#     .option("escape", '"')
-#     .option("multiLine", "true")
-#     .option("ignoreLeadingWhiteSpace", "true")
-#     .option("ignoreTrailingWhiteSpace", "true")
-#     .option("nullValue", "")
-#     .option("emptyValue", "")
-#     .option("encoding", "UTF-8")
-#     .option("mode", "PERMISSIVE")
-#     .option("columnNameOfCorruptRecord", "_corrupt_record")
-#     .csv(FMUCD_CSV_PATH)
-# )
+# Strategy: Read without header first, get actual header row, then rename columns
 
-# Option 2: Use schema inference (default - try this first)
-# Try with comma delimiter first (most common)
-try:
-    df = (
-        spark.read
-        .option("header", "true")                    # First row is header
-        .option("inferSchema", "true")               # Infer data types
-        .option("delimiter", ",")                    # Comma delimiter
-        .option("quote", '"')                        # Double quote for quoted fields
-        .option("escape", '"')                       # Escape quotes within quoted fields
-        .option("multiLine", "true")                 # Handle multi-line values
-        .option("ignoreLeadingWhiteSpace", "true")   # Trim leading whitespace
-        .option("ignoreTrailingWhiteSpace", "true")  # Trim trailing whitespace
-        .option("nullValue", "")                     # Treat empty strings as null
-        .option("emptyValue", "")                    # Handle empty values
-        .option("encoding", "UTF-8")                 # UTF-8 encoding
-        .option("mode", "PERMISSIVE")                # Handle malformed records gracefully
-        .option("columnNameOfCorruptRecord", "_corrupt_record")  # Capture bad records
-        .csv(FMUCD_CSV_PATH)
-    )
-    print("✅ CSV read successfully with comma delimiter")
-except Exception as e:
-    print(f"⚠️ Failed with comma delimiter: {e}")
-    print("Trying with semicolon delimiter...")
-    # Fallback: try semicolon delimiter (common in European CSVs)
-    try:
-        df = (
-            spark.read
-            .option("header", "true")
-            .option("inferSchema", "true")
-            .option("delimiter", ";")
-            .option("quote", '"')
-            .option("escape", '"')
-            .option("multiLine", "true")
-            .option("ignoreLeadingWhiteSpace", "true")
-            .option("ignoreTrailingWhiteSpace", "true")
-            .option("nullValue", "")
-            .option("emptyValue", "")
-            .option("encoding", "UTF-8")
-            .option("mode", "PERMISSIVE")
-            .option("columnNameOfCorruptRecord", "_corrupt_record")
-            .csv(FMUCD_CSV_PATH)
-        )
-        print("✅ CSV read successfully with semicolon delimiter")
-    except Exception as e2:
-        print(f"❌ Failed with semicolon delimiter: {e2}")
-        print("Please check the CSV format and delimiter. You may need to use explicit schema.")
-        raise
+# Step 1: Read first row to get actual header names (with special characters intact)
+print("Reading header row to get exact column names...")
+header_row_df = (
+    spark.read
+    .option("header", "false")
+    .option("inferSchema", "false")
+    .option("delimiter", ",")
+    .option("quote", '"')
+    .option("escape", '"')
+    .option("multiLine", "false")  # Header should be single line
+    .option("encoding", "UTF-8")
+    .csv(FMUCD_CSV_PATH)
+    .limit(1)
+)
+
+# Get actual header names from first row
+header_row = header_row_df.collect()[0]
+actual_header_names = [str(header_row[col]) for col in header_row_df.columns]
+print(f"Found {len(actual_header_names)} columns")
+print("Sample headers:", actual_header_names[:5])
+
+# COMMAND ----------
+
+# Step 2: Read full CSV without header, then rename columns using actual header names
+print("Reading full CSV...")
+df = (
+    spark.read
+    .option("header", "false")                    # Don't use header row
+    .option("inferSchema", "true")               # Infer data types
+    .option("delimiter", ",")
+    .option("quote", '"')
+    .option("escape", '"')
+    .option("multiLine", "true")
+    .option("ignoreLeadingWhiteSpace", "true")
+    .option("ignoreTrailingWhiteSpace", "true")
+    .option("nullValue", "")
+    .option("emptyValue", "")
+    .option("encoding", "UTF-8")
+    .option("mode", "PERMISSIVE")
+    .option("columnNameOfCorruptRecord", "_corrupt_record")
+    .csv(FMUCD_CSV_PATH)
+)
+
+# Rename columns using actual header names
+print("Renaming columns to match actual CSV headers...")
+for i, actual_name in enumerate(actual_header_names):
+    if i < len(df.columns):
+        current_col_name = df.columns[i]
+        df = df.withColumnRenamed(current_col_name, actual_name)
+        if current_col_name != actual_name:
+            print(f"  Renamed: '{current_col_name}' → '{actual_name}'")
+
+# Remove the first row (which is the header row)
+# Use row_number to reliably identify and remove the first row
+from pyspark.sql.window import Window
+
+df = df.withColumn("_temp_row_id", F.monotonically_increasing_id())
+# Create a window to assign row numbers
+w = Window.orderBy("_temp_row_id")
+df = df.withColumn("_row_num", F.row_number().over(w))
+# Remove first row (row_num = 1, which is the header)
+df = df.filter(F.col("_row_num") > 1).drop("_row_num", "_temp_row_id")
+
+print(f"\n✅ CSV read successfully with {len(actual_header_names)} columns")
+print(f"Total rows after removing header: {df.count()}")
 
 # COMMAND ----------
 
