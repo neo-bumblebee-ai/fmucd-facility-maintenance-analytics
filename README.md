@@ -14,6 +14,58 @@ An end-to-end Databricks pipeline that:
 - Ranks them into actionable risk buckets (HIGH / MEDIUM / LOW)
 
 ## Architecture
+g
+flowchart LR
+
+    subgraph Source
+        A[FMUCD CSV\n/Volumes/workspace/sor/fmucd]
+    end
+
+    subgraph Bronze["Bronze Layer (Delta)"]
+        B1[Raw Ingest Table\nSchema Sanitized\nIngest TS, Batch ID]
+    end
+
+    subgraph Silver["Silver Layer (Delta)"]
+        S1[dim_building\nSCD Type 2]
+        S2[dim_system\nSCD Type 2]
+        S3[fact_work_orders\nCleansed + Typed]
+    end
+
+    subgraph Gold["Gold Layer (Delta)"]
+        G1[work_orders_enriched]
+        G2[high_duration_risk_queue_ranked]
+        G3[Ops Views\nTop N Queues]
+    end
+
+    subgraph ML["ML & Scoring"]
+        M1[Feature Engineering]
+        M2[Logistic Regression]
+        M3[MLflow Tracking\nModel Registry]
+    end
+
+    subgraph Analytics["Analytics"]
+        D1[Databricks SQL Views]
+        D2[Ops Dashboard]
+    end
+
+    A --> B1
+    B1 --> S1
+    B1 --> S2
+    B1 --> S3
+
+    S1 --> G1
+    S2 --> G1
+    S3 --> G1
+
+    G1 --> M1
+    M1 --> M2
+    M2 --> M3
+    M2 --> G2
+
+    G2 --> G3
+    G3 --> D1
+    D1 --> D2
+
 **Bronze**
 - Raw FMUCD CSV ingested from Databricks Volume
 - Schema sanitization for Delta compatibility
