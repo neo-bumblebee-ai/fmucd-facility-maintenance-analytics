@@ -2,25 +2,12 @@
 # Adjust paths and names for your Databricks workspace / Unity Catalog.
 
 catalog: fmucd_capstone
-schemas:
-  bronze: bronze
-  silver: silver
-  gold: gold
-
-tables:
-  bronze_raw: bronze_fmucd_raw
-  # Silver: Fact and Dimension tables
-  fact_work_orders: fact_work_orders
-  dim_building: dim_building
-  dim_system: dim_system
-  dim_subsystem: dim_subsystem
-  dim_component: dim_component
-  # Gold tables
-  gold_wo_by_building: gold_wo_by_building
-  gold_wo_by_system: gold_wo_by_system
-  gold_ppm_upm_summary: gold_ppm_upm_summary
-  gold_kpis: gold_kpis
 
 paths:
-  # FMUCD source: Already uploaded to Databricks Volume
-  fmucd_csv: /Volumes/workspace/sor/fmucd/Facility Management Unified Classification Database (FMUCD).csv
+  source_csv: /Volumes/workspace/sor/fmucd/Facility Management Unified Classification Database (FMUCD).csv
+
+tables:
+  bronze: bronze_fmucd_raw
+  silver_fact: fact_work_orders
+  gold_enriched: work_orders_enriched
+  gold_scored: high_duration_risk_queue_ranked

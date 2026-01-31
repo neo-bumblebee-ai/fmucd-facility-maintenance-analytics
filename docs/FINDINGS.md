@@ -1,32 +1,25 @@
-# Key Findings — Facility Maintenance Analytics (FMUCD)
+# Key Findings – FMUCD Capstone
 
-*Document insights, model performance, and business recommendations as you complete the capstone.*
+## Data Scale
+- Total work orders: ~2.6M
+- Usable duration records: ~1.6M
 
----
+## ML Results
+- Model: Logistic Regression
+- AUC: ~0.56
+- Raw probabilities poorly calibrated
 
-## Insights (from Gold / dashboard)
+## Operational Insight
+Percentile-based ranking produced:
+- HIGH risk: ~1% (~26K work orders)
+- MEDIUM risk: ~4% (~106K)
+- LOW risk: ~95%
 
-- **Top costly systems**: …
-- **PPM vs UPM mix**: …
-- **Buildings with highest deferred maintenance (DMC) / FCI**: …
-- **Seasonality or weather impact**: …
+## Business Insights
+- Certain systems consistently dominate HIGH-risk queues
+- Buildings with high deferred maintenance correlate with risk
+- Reactive maintenance (UPM) skews higher risk than PPM
 
----
-
-## ML (if applicable)
-
-- **Model**: e.g. high-cost / long-duration predictor.
-- **Metrics**: accuracy, AUC, RMSE, etc.
-- **Top features**: …
-
----
-
-## Business recommendations
-
-- Prioritize preventive (PPM) for …
-- Focus maintenance budget on systems/buildings …
-- …
-
----
-
-*Update this file as you run the pipeline and build the dashboard.*
+## Recommendation
+Use ML score as a **ranking signal**, not a binary decision.
+Integrate risk queue into daily maintenance triage.
