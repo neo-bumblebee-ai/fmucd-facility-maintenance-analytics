@@ -14,57 +14,55 @@ An end-to-end Databricks pipeline that:
 - Ranks them into actionable risk buckets (HIGH / MEDIUM / LOW)
 
 ## Architecture
-g
+
+```mermaid
 flowchart LR
 
-    subgraph Source
-        A[FMUCD CSV\n/Volumes/workspace/sor/fmucd]
-    end
+  subgraph Source
+    A["FMUCD CSV<br/>/Volumes/workspace/sor/fmucd"]
+  end
 
-    subgraph Bronze["Bronze Layer (Delta)"]
-        B1[Raw Ingest Table\nSchema Sanitized\nIngest TS, Batch ID]
-    end
+  subgraph Bronze["Bronze (Delta)"]
+    B1["bronze.bronze_fmucd_raw<br/>raw ingest + schema sanitization<br/>ingestion_ts, batch_id"]
+  end
 
-    subgraph Silver["Silver Layer (Delta)"]
-        S1[dim_building\nSCD Type 2]
-        S2[dim_system\nSCD Type 2]
-        S3[fact_work_orders\nCleansed + Typed]
-    end
+  subgraph Silver["Silver (Delta)"]
+    S1["silver.dim_building (SCD2)<br/>start_date, end_date, active_flag<br/>load_date, last_updated_date"]
+    S2["silver.dim_system (SCD2)<br/>start_date, end_date, active_flag<br/>load_date, last_updated_date"]
+    S3["silver.fact_work_orders<br/>cleansed + typed + business rules"]
+  end
 
-    subgraph Gold["Gold Layer (Delta)"]
-        G1[work_orders_enriched]
-        G2[high_duration_risk_queue_ranked]
-        G3[Ops Views\nTop N Queues]
-    end
+  subgraph Gold["Gold (Delta)"]
+    G1["gold.work_orders_enriched"]
+    G2["gold.high_duration_risk_queue"]
+    G3["gold.high_duration_risk_queue_ranked<br/>percentile buckets"]
+    G4["gold.v_ops_queue_top500 / v_risk_by_building / v_risk_by_system"]
+  end
 
-    subgraph ML["ML & Scoring"]
-        M1[Feature Engineering]
-        M2[Logistic Regression]
-        M3[MLflow Tracking\nModel Registry]
-    end
+  subgraph ML["ML + MLflow"]
+    M1["Feature engineering"]
+    M2["Logistic Regression"]
+    M3["MLflow tracking (runs)"]
+  end
 
-    subgraph Analytics["Analytics"]
-        D1[Databricks SQL Views]
-        D2[Ops Dashboard]
-    end
+  subgraph Analytics["Analytics"]
+    D1["Databricks SQL views"]
+    D2["DBSQL dashboard (optional)"]
+  end
 
-    A --> B1
-    B1 --> S1
-    B1 --> S2
-    B1 --> S3
+  A --> B1
+  B1 --> S1
+  B1 --> S2
+  B1 --> S3
 
-    S1 --> G1
-    S2 --> G1
-    S3 --> G1
+  S1 --> G1
+  S2 --> G1
+  S3 --> G1
 
-    G1 --> M1
-    M1 --> M2
-    M2 --> M3
-    M2 --> G2
-
-    G2 --> G3
-    G3 --> D1
-    D1 --> D2
+  G1 --> M1 --> M2 --> M3
+  M2 --> G2 --> G3 --> G4
+  G4 --> D1 --> D2
+  ```
 
 **Bronze**
 - Raw FMUCD CSV ingested from Databricks Volume
