@@ -51,17 +51,28 @@ Execution is orchestrated via Databricks Workflows.
 See `docs/WORKFLOW_JOB.md` for task order and dependencies.
 
 ## Repository Structure
-notebooks/
-01_bronze_ingest
-02_silver_cleanse
-02b_data_quality
-03_gold_aggregates
-04_ml_training
-05_ml_scoring
-06_dashboard_sql
-
-docs/
-CAPSTONE_PLAN.md
-FINDINGS.md
-WORKFLOW_JOB.md
-CURSOR_DATABRICKS.md
+```text
+fmucd-facility-maintenance-analytics/
+├─ notebooks/
+│  ├─ 01_bronze_ingest.py
+│  ├─ 02_silver_cleanse.py
+│  ├─ 02b_data_quality.py
+│  ├─ 03_gold_aggregates.py
+│  ├─ 04_ml_training.py
+│  ├─ 05_ml_scoring.py
+│  └─ 06_dashboard_sql.py
+├─ docs/
+│  ├─ CAPSTONE_PLAN.md
+│  ├─ FINDINGS.md
+│  ├─ WORKFLOW_JOB.md
+│  └─ CURSOR_DATABRICKS.md
+├─ conf/
+│  └─ config.yaml
+├─ screenshots/
+├─ sql/
+├─ .gitignore
+├─ CAPSTONE_CHECKLIST.md
+├─ databricks.yml
+├─ LICENSE
+├─ README.md
+└─ requirements.txt
