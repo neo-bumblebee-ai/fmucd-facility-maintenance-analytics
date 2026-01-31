@@ -1,6 +1,4 @@
 # Capstone — Facility Maintenance Analytics (FMUCD)
-# Adjust paths and names for your Databricks workspace / Unity Catalog.
-
 catalog: fmucd_capstone
 
 paths:
