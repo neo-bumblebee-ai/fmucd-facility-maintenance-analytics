@@ -104,12 +104,11 @@ See `docs/WORKFLOW_JOB.md` for task order and dependencies.
 ```text
 fmucd-facility-maintenance-analytics/
 ├─ notebooks/
-│  ├─ 01_bronze_ingest.py
-│  ├─ 02_silver_cleanse.py
-│  ├─ 02b_data_quality.py
-│  ├─ 03_gold_aggregates.py
-│  ├─ 04_ml_training.py
-│  ├─ 05_ml_scoring.py
+│  ├─ 01_bronze_ingest.pynb
+│  ├─ 02_silver_cleanse.ipynb
+│  ├─ 03_gold_aggregates.ipynb
+│  ├─ 004_ml_training.ipynb
+│  ├─ 05_ml_scoring.ipynb
 │  └─ 06_dashboard_sql.py
 ├─ docs/
 │  ├─ CAPSTONE_PLAN.md

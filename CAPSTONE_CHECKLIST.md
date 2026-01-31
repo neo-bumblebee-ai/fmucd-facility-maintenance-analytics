@@ -13,7 +13,6 @@ Implements Medallion architecture, ML-based risk scoring, and operational dashbo
 - ✅ Complex transformations & business rules
 - ⬜ Orchestration (Databricks Workflow – scheduled next)
 - ✅ Governance (Unity Catalog, schemas, naming)
-- ⬜ Analytics Dashboard (views created; DBSQL dashboard pending)
 - ✅ ML Component (training, MLflow tracking, scoring)
 - ✅ Documentation (README, plan, findings, workflow)
 

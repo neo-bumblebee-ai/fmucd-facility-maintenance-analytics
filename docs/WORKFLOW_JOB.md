@@ -6,11 +6,10 @@ fmucd_capstone_pipeline
 ## Task Order
 1. 01_bronze_ingest
 2. 02_silver_cleanse
-3. 02b_data_quality
-4. 03_gold_aggregates
-5. 04_ml_training
-6. 05_ml_scoring
-7. 06_dashboard_sql (optional)
+3. 03_gold_aggregates
+4. 04_ml_training
+5. 05_ml_scoring
+6. 06_dashboard_sql (optional)
 
 ## Dependencies
 Each task depends on the previous task completing successfully.
