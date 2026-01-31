@@ -11,7 +11,7 @@ Implements Medallion architecture, ML-based risk scoring, and operational dashbo
 - ✅ Data Architecture (Bronze → Silver → Gold)
 - ✅ Delta Lake tables with ACID guarantees
 - ✅ Complex transformations & business rules
-- ⬜ Orchestration (Databricks Workflow – scheduled next)
+- ✅ Orchestration (Databricks Workflow – scheduled next)
 - ✅ Governance (Unity Catalog, schemas, naming)
 - ✅ ML Component (training, MLflow tracking, scoring)
 - ✅ Documentation (README, plan, findings, workflow)
@@ -34,7 +34,7 @@ Implements Medallion architecture, ML-based risk scoring, and operational dashbo
 - ✅ Full dataset scoring completed
 - ✅ Percentile-based risk ranking implemented
 - ✅ Analytics Views
-- ⬜ Workflow scheduling
+- ✅ Workflow scheduling
 
 ---
 
