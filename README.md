@@ -16,11 +16,10 @@ An end-to-end Databricks pipeline that:
 ## Architecture
 
 ```mermaid
-flowchart LR
 
-  subgraph Source
-    A["FMUCD CSV<br/>/Volumes/workspace/sor/fmucd"]
-  end
+flowchart TB
+
+  A["FMUCD CSV<br/>/Volumes/workspace/sor/fmucd"]
 
   subgraph Bronze["Bronze (Delta)"]
     B1["bronze.bronze_fmucd_raw<br/>raw ingest + schema sanitization<br/>ingestion_ts, batch_id"]
@@ -36,7 +35,7 @@ flowchart LR
     G1["gold.work_orders_enriched"]
     G2["gold.high_duration_risk_queue"]
     G3["gold.high_duration_risk_queue_ranked<br/>percentile buckets"]
-    G4["gold.v_ops_queue_top500 / v_risk_by_building / v_risk_by_system"]
+    G4["gold.v_ops_queue_top500<br/>gold.v_risk_by_building<br/>gold.v_risk_by_system"]
   end
 
   subgraph ML["ML + MLflow"]
@@ -62,6 +61,7 @@ flowchart LR
   G1 --> M1 --> M2 --> M3
   M2 --> G2 --> G3 --> G4
   G4 --> D1 --> D2
+
   ```
 
 **Bronze**
