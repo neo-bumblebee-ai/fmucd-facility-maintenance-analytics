@@ -1,6 +1,12 @@
 # Databricks notebook source
-# 01 — Bronze: Ingest FMUCD (Single CSV in Volumes)
+# Databricks notebook source
+# 01 — Bronze: Ingest FMUCD (Single CSV in Volumes) into Delta
+# - Reads the CSV from Volumes
+# - Sanitizes column names so Delta accepts them
+# - Adds ingestion metadata
+# - Writes a repeatable (idempotent) Bronze Delta table
 
+import re
 from pyspark.sql import functions as F
 
 # -------------------------
@@ -11,8 +17,44 @@ BRONZE_SCHEMA = "bronze"
 BRONZE_TABLE = "bronze_fmucd_raw"
 
 SOURCE_PATH = "/Volumes/workspace/sor/fmucd/Facility Management Unified Classification Database (FMUCD).csv"
-
 FULL_TABLE_NAME = f"{CATALOG}.{BRONZE_SCHEMA}.{BRONZE_TABLE}"
+
+# -------------------------
+# HELPERS
+# -------------------------
+def sanitize_col_name(c: str) -> str:
+    """
+    Delta has restrictions on column names. This function converts FMUCD headers
+    (with spaces, %, parentheses, °, etc.) into Delta-safe names while preserving meaning.
+    """
+    c = c.strip()
+
+    replacements = {
+        "State/Province": "State_Province",
+        "FCI (facility condition index)": "FCI",
+        "CRV (current replacement value)": "CRV",
+        "DMC (deferred maintenance cost)": "DMC",
+        "PPM/UPM": "PPM_UPM",
+        "MinTemp.(°C)": "MinTemp_C",
+        "MaxTemp.(°C)": "MaxTemp_C",
+        "Atmospheric pressure(hPa)": "AtmosphericPressure_hPa",
+        "Humidity(%)": "Humidity_pct",
+        "WindSpeed(m/s)": "WindSpeed_mps",
+        "Precipitation(mm)": "Precipitation_mm",
+        "Snow(mm)": "Snow_mm",
+        "Cloudness(%)": "Cloudness_pct",
+    }
+    if c in replacements:
+        return replacements[c]
+
+    # General cleanup
+    c = c.replace("/", "_")
+    c = re.sub(r"[ ,;{}()\n\t=]", "_", c)  # invalid chars -> _
+    c = re.sub(r"[^0-9a-zA-Z_]", "", c)   # remove other non-safe chars (like °)
+    c = re.sub(r"_+", "_", c)             # collapse repeats
+    c = c.strip("_")
+
+    return c
 
 # -------------------------
 # CREATE NAMESPACES
@@ -21,16 +63,16 @@ spark.sql(f"CREATE CATALOG IF NOT EXISTS {CATALOG}")
 spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{BRONZE_SCHEMA}")
 
 # -------------------------
-# READ (RAW)
+# READ CSV (RAW)
 # -------------------------
 df_raw = (
     spark.read
-    .option("header", "true")                   # CSV header row
-    .option("inferSchema", "false")             # Bronze = keep as string, preserve source
+    .option("header", "true")
+    .option("inferSchema", "false")  # Bronze = keep as string
     .option("delimiter", ",")
     .option("quote", "\"")
     .option("escape", "\"")
-    .option("multiLine", "true")                # allow multi-line text fields
+    .option("multiLine", "true")
     .option("ignoreLeadingWhiteSpace", "true")
     .option("ignoreTrailingWhiteSpace", "true")
     .option("mode", "PERMISSIVE")
@@ -39,7 +81,7 @@ df_raw = (
 )
 
 # -------------------------
-# BASIC PARSING CHECK (optional but useful)
+# PARSING CHECK: CORRUPT RECORDS
 # -------------------------
 if "_corrupt_record" in df_raw.columns:
     corrupt_cnt = df_raw.filter(F.col("_corrupt_record").isNotNull()).count()
@@ -47,49 +89,79 @@ if "_corrupt_record" in df_raw.columns:
         print(f"⚠️ Corrupt records detected: {corrupt_cnt}")
         display(df_raw.filter(F.col("_corrupt_record").isNotNull()).select("_corrupt_record").limit(10))
     else:
-        # If none exist, drop the column to keep bronze clean
         df_raw = df_raw.drop("_corrupt_record")
+
+# -------------------------
+# SANITIZE COLUMN NAMES FOR DELTA
+# -------------------------
+original_cols = df_raw.columns
+sanitized_cols = [sanitize_col_name(c) for c in original_cols]
+
+# Ensure uniqueness (in case two columns sanitize to same name)
+seen = {}
+final_cols = []
+for c in sanitized_cols:
+    if c not in seen:
+        seen[c] = 0
+        final_cols.append(c)
+    else:
+        seen[c] += 1
+        final_cols.append(f"{c}_{seen[c]}")
+
+# Rename columns
+df_sanitized = df_raw
+for old, new in zip(original_cols, final_cols):
+    if old != new:
+        df_sanitized = df_sanitized.withColumnRenamed(old, new)
 
 # -------------------------
 # ADD METADATA
 # -------------------------
 df_bronze = (
-    df_raw
+    df_sanitized
     .withColumn("_ingest_ts", F.current_timestamp())
     .withColumn("_source_file", F.lit(SOURCE_PATH))
     .withColumn("_batch_id", F.date_format(F.current_timestamp(), "yyyyMMdd_HHmmss"))
 )
 
 # -------------------------
-# WRITE TO DELTA (repeatable)
+# WRITE TO DELTA (IDEMPOTENT)
 # -------------------------
 (
     df_bronze.write
     .format("delta")
-    .mode("overwrite")                 # IMPORTANT: no duplicates when re-running
+    .mode("overwrite")                 # repeatable loads while building
     .option("overwriteSchema", "true")
     .saveAsTable(FULL_TABLE_NAME)
 )
 
-print(f"✅ Bronze table created: {FULL_TABLE_NAME}")
-print("Rows:", df_bronze.count())
-print("Columns:", len(df_bronze.columns))
+# -------------------------
+# VERIFY
+# -------------------------
+row_count = df_bronze.count()
+col_count = len(df_bronze.columns)
+
+print(f"✅ Bronze table created/updated: {FULL_TABLE_NAME}")
+print(f"Rows: {row_count}")
+print(f"Columns: {col_count}")
+
+# Show a few rows
 display(df_bronze.limit(10))
 
-%sql
--- 1) Count
-SELECT COUNT(*) AS row_count
-FROM fmucd_capstone.bronze.bronze_fmucd_raw;
+# Optional: print the mapping for your Silver layer
+print("\nColumn mapping (raw → bronze):")
+for old, new in zip(original_cols, final_cols):
+    if old != new:
+        print(f"  {old}  →  {new}")
 
--- 2) Ensure header didn't load as a data row
-SELECT COUNT(*) AS header_rows
-FROM fmucd_capstone.bronze.bronze_fmucd_raw
-WHERE Country = 'Country';
 
--- 3) Key nulls
-SELECT
-  COUNT(*) AS total_rows,
-  SUM(CASE WHEN WOID IS NULL THEN 1 ELSE 0 END) AS null_woid,
-  SUM(CASE WHEN BuildingID IS NULL THEN 1 ELSE 0 END) AS null_buildingid,
-  SUM(CASE WHEN SystemCode IS NULL THEN 1 ELSE 0 END) AS null_systemcode
-FROM fmucd_capstone.bronze.bronze_fmucd_raw;
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SELECT COUNT(*) AS row_count
+# MAGIC FROM fmucd_capstone.bronze.bronze_fmucd_raw;
+# MAGIC
+# MAGIC SELECT COUNT(*) AS header_rows
+# MAGIC FROM fmucd_capstone.bronze.bronze_fmucd_raw
+# MAGIC WHERE Country = 'Country';
+# MAGIC
